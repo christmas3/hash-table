@@ -1,5 +1,5 @@
 name: Build and test
-  
+
 on:
   push:
   pull_request:
@@ -8,9 +8,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build the testing image
-      run: docker build . --file Dockerfile --tag testing
-    - name: Run tests
-      run: docker run --rm -t testing ./hash-table
-  
+      - uses: actions/checkout@v2
+      - name: Build the testing image
+        run: docker build . --file Dockerfile --tag testing
+      - name: Run tests
+        run: docker run --rm -t testing ./hash_table
