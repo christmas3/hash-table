@@ -12,7 +12,6 @@ class HashTable
 public:
     using KeyType = K;
     using ValueType = std::pair<K, V>;
-    using Iterator = ValueType*;
     using SizeType = std::size_t;
 
     explicit HashTable(SizeType capacity = kDefaultCapacity)
@@ -30,6 +29,21 @@ public:
     [[nodiscard]] SizeType threshold() const { return threshold_; }
     [[nodiscard]] SizeType size() const { return size_; }
     [[nodiscard]] bool empty() const { return size_ == 0; }
+    [[nodiscard]] float loadFactor() const { return loadFactor_; }
+
+    ValueType* find(const KeyType& key) const
+    {
+        auto idx = hash(key);
+        auto* e = buckets_[idx].begin();
+        while (e) {
+            if (e->val.first == key) {
+                return &e->val;
+            }
+            e = e->next;
+        }
+
+        return nullptr;
+    }
 
     std::pair<V, bool> insert(const ValueType& val) { insert(std::move(ValueType(val))); }
     std::pair<V, bool> insert(ValueType&& val)
@@ -57,6 +71,19 @@ public:
         return result;
     }
 
+    std::pair<V, bool> remove(const KeyType& key)
+    {
+        auto idx = hash(key);
+        auto removed = buckets_[idx].remove(key);
+        if (removed) {
+            --size_;
+            std::pair<V, bool> result = { std::move(removed->val.second), true };
+            delete removed;
+            return result;
+        }
+        return { {}, false };
+    }
+
     void rehash()
     {
         auto* oldBuckets = buckets_;
@@ -73,6 +100,7 @@ public:
                 e->next = nullptr;
                 e = next;
             }
+            oldBuckets[i].reset();
         }
 
         delete[] oldBuckets;
@@ -105,11 +133,35 @@ private:
                     prev = next;
                     next = prev->next;
                 }
+                prev->next = n;
             }
-            prev->next = n;
+            else {
+                begin_ = n;
+            }
         }
 
         Node* begin() { return begin_; }
+        void reset() { begin_ = nullptr; }
+
+        Node* remove(const KeyType& key)
+        {
+            auto* cur = begin_;
+            Node* prev = nullptr;
+            while (cur) {
+                if (cur->val.first == key) {
+                    if (!prev) {
+                        begin_ = cur->next;
+                    }
+                    else {
+                        prev->next = cur->next;
+                    }
+                    return cur;
+                }
+                prev = cur;
+                cur = cur->next;
+            }
+            return nullptr;
+        }
 
         ForwardList()
             : begin_(nullptr)
